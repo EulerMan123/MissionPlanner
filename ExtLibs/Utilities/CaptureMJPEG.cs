@@ -160,8 +160,7 @@ namespace MissionPlanner.Utilities
                             */
                             try
                             {
-                                System.Drawing.Bitmap frame = new System.Drawing.Bitmap(new MemoryStream(buf1));
-
+                                System.Drawing.Bitmap frame = new System.Drawing.Bitmap(new MemoryStream(buf1));                           
                                 fps++;
 
                                 if (lastimage.Second != DateTime.Now.Second)

@@ -4661,6 +4661,8 @@ namespace MissionPlanner.GCSViews
                     AddCommand(MAVLink.MAV_CMD.WAYPOINT, 0, 0, 0, 0, item.Lat, item.Lng, item.Alt);
                 }
 
+
+
                 quickadd = false;
 
                 writeKML();

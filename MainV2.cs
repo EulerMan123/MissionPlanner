@@ -37,7 +37,16 @@ using Transitions;
 using System.Linq;
 using MissionPlanner.Joystick;
 using System.Net;
-using Newtonsoft.Json;
+//using Newtonsoft.Json;
+
+using System;
+using Tesseract;
+using System.Drawing; // Ensure System.Drawing.Common package is installed
+using System.IO;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Drawing.Imaging;
 
 namespace MissionPlanner
 {
@@ -2648,6 +2657,23 @@ namespace MissionPlanner
 
             while (serialThread)
             {
+
+
+                Bitmap pic = (Bitmap)GCSViews.FlightData.myhud.bgimage;
+                if (pic != null)
+                {
+                    pic.Save("C:\\Users\\david\\Desktop\\Vid\\pic.png");
+                    string text = OCR(pic);
+                    string response = await ChatGPT(text);
+                    int wp_num = (int)MainV2.comPort.getWPCount();
+                    ushort j = (ushort)(wp_num + 1);
+                    ushort k = 0;
+                   if(text == "stop")
+                    {
+                        //MainV2.comPort.setWP(MainV2.comPort.getWP(j), k);
+                    }
+                }
+
                 try
                 {
                     await Task.Delay(1).ConfigureAwait(false); // was 5
@@ -4398,6 +4424,79 @@ namespace MissionPlanner
             public Int32 dbch_size;
             public Int32 dbch_devicetype;
             public Int32 dbch_reserved;
+        }
+
+        public static string OCR(Bitmap originalBitmap)
+        {
+            const string tessdataPath = @"../tessdata";
+            const string language = "eng";
+
+
+
+
+            string tempImagePath = Path.GetTempFileName();
+            originalBitmap.Save(tempImagePath, System.Drawing.Imaging.ImageFormat.Tiff);
+
+            using (var engine = new TesseractEngine(tessdataPath, language, EngineMode.Default))
+            {
+                using (var img = Pix.LoadFromFile(tempImagePath))
+                {
+                    using (var page = engine.Process(img))
+                    {
+                        // Clean up the temporary image file
+                        File.Delete(tempImagePath);
+                        return page.GetText();
+                    }
+                }
+            }
+        }
+
+
+        public static async Task<string> ChatGPT(string text)
+        {
+            Console.WriteLine(text);
+
+            string apiKey = "API_KEY"; // Make sure to replace with your actual API key
+            string apiUrl = "https://api.openai.com/v1/chat/completions";
+
+            string prompt = $"You: what I am reading {text}";
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+                var requestBody = new
+                {
+                    model = "gpt-3.5-turbo",
+                    messages = new[]
+                    {
+                    new { role = "system", content = "You are a helpful assistant." },
+                    new { role = "user", content = prompt }
+                }
+                };
+
+                var response = await client.PostAsync(apiUrl, new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json"));
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Response was successful: {response.IsSuccessStatusCode}");
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    using (JsonDocument doc = JsonDocument.Parse(responseBody))
+                    {
+                        JsonElement root = doc.RootElement;
+                        JsonElement choices = root.GetProperty("choices");
+                        string aiResponse = choices[0].GetProperty("message").GetProperty("content").GetString();
+
+                        Console.WriteLine($"AI: {aiResponse}");
+                        return aiResponse;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Failed to get a response from the API.");
+                    return "Error in processing your request.";
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

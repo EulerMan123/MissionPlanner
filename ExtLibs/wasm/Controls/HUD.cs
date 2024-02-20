@@ -15,6 +15,7 @@ using Point = System.Drawing.Point;
 using PointF = System.Drawing.PointF;
 using Rectangle = System.Drawing.Rectangle;
 using RectangleF = System.Drawing.RectangleF;
+using MissionPlanner.ArduPilot;
 
 namespace MissionPlanner.Controls
 {
